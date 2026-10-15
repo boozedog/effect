@@ -4,7 +4,7 @@
 
 Base: `e730f59d29db5f1e312be6476a95d07bcad45788` (`e730f59d29db5f1e312be6476a95d07bcad45788`)
 
-Head: `origin/main` (`7547a99f81fa6f7e651d52f3d42081f399bfbca8`)
+Head: `HEAD` (`2bfd85670f313579fe2a52b703bc3f763e231030`)
 
 This file is generated from the API diff and `migration/annotations/*.yaml`.
 
@@ -5848,7 +5848,7 @@ effect/rpc/Utils (barrel: effect/rpc)
 
 ### `@effect/cluster/SingleRunner`
 
-- `SingleRunner.layer` -> `effect/cluster/SingleRunner#layer`: Moved into core Effect. V4 additionally requires Crypto.Crypto because SQL message storage hashes long deduplication keys.
+- `SingleRunner.layer` -> `effect/cluster/SingleRunner#layer`: Moved into core Effect. V4 additionally requires the `Digest` service from `effect/crypto/Digest` because SQL message storage hashes long deduplication keys.
 
 ### `@effect/cluster/SingletonAddress`
 
@@ -5862,11 +5862,11 @@ effect/rpc/Utils (barrel: effect/rpc)
 
 ### `@effect/cluster/SqlMessageStorage`
 
-- `SqlMessageStorage.layer` -> `effect/cluster/SqlMessageStorage#layer`: Moved into core Effect. V4 adds a Crypto.Crypto requirement for hashing long deduplication keys.
+- `SqlMessageStorage.layer` -> `effect/cluster/SqlMessageStorage#layer`: Moved into core Effect. V4 adds a requirement on the `Digest` service from `effect/crypto/Digest` for hashing long deduplication keys.
 
-- `SqlMessageStorage.layerWith` -> `effect/cluster/SqlMessageStorage#layerWith`: Moved into core Effect with the same optional table prefix; v4 additionally requires Crypto.Crypto.
+- `SqlMessageStorage.layerWith` -> `effect/cluster/SqlMessageStorage#layerWith`: Moved into core Effect with the same optional table prefix; v4 additionally requires the `Digest` service from `effect/crypto/Digest`.
 
-- `SqlMessageStorage.make` -> `effect/cluster/SqlMessageStorage#make`: Moved into core Effect with the same prefix option; v4 additionally requires Crypto.Crypto.
+- `SqlMessageStorage.make` -> `effect/cluster/SqlMessageStorage#make`: Moved into core Effect with the same prefix option; v4 additionally requires the `Digest` service from `effect/crypto/Digest`.
 
 ### `@effect/cluster/SqlRunnerStorage`
 
@@ -6274,7 +6274,7 @@ effect/rpc/Utils (barrel: effect/rpc)
 
 ### `@effect/platform-bun/BunContext`
 
-- `BunContext.BunContext` -> `BunServices.BunServices`: The aggregate was renamed and now provides ChildProcessSpawner, Crypto, FileSystem, Path, Stdio, and Terminal; add BunWorker separately when needed.
+- `BunContext.BunContext` -> `BunServices.BunServices`: The aggregate was renamed and now provides ChildProcessSpawner, FileSystem, Path, Stdio, and Terminal. It provides no crypto services: add the `BunCrypto.layer*` layer for each `effect/crypto` family you use, and add BunWorker separately when needed.
 
 - `BunContext.layer` -> `BunServices.layer`: Use the renamed aggregate layer; worker services are no longer included.
 
@@ -6386,9 +6386,9 @@ effect/rpc/Utils (barrel: effect/rpc)
 
 ### `@effect/platform-node/NodeContext`
 
-- `NodeContext.NodeContext` -> `NodeServices.NodeServices`: Use the renamed service union; it replaces CommandExecutor with ChildProcessSpawner, adds Crypto and Stdio, and omits WorkerManager.
+- `NodeContext.NodeContext` -> `NodeServices.NodeServices`: Use the renamed service union; it replaces CommandExecutor with ChildProcessSpawner, adds Stdio, and omits WorkerManager. It includes no crypto services.
 
-- `NodeContext.layer` -> `NodeServices.layer`: The aggregate was renamed and now provides ChildProcessSpawner, Crypto, FileSystem, Path, Stdio, and Terminal; add NodeWorker separately when needed.
+- `NodeContext.layer` -> `NodeServices.layer`: The aggregate was renamed and now provides ChildProcessSpawner, FileSystem, Path, Stdio, and Terminal. It provides no crypto services: add the `NodeCrypto.layer*` layer for each `effect/crypto` family you use, and add NodeWorker separately when needed.
 
 ### `@effect/platform-node/NodeFileSystem/ParcelWatcher`
 
@@ -7070,6 +7070,8 @@ effect/rpc/Utils (barrel: effect/rpc)
 
 - `HttpClient.makeWith` -> `HttpClient.makeWith`: Retained with the preprocess and postprocess constructor pattern.
 
+- `HttpClient.mapRequest`: TODO: needs guidance
+
 - `HttpClient.retry` -> `HttpClient.retry`: Retained; the Schedule error channel is included in the resulting client error type.
 
 - `HttpClient.tap` -> `effect/http/HttpClient#tap`: Moved to the v4 HTTP module with the same response-effect callback and client error/service widening.
@@ -7567,6 +7569,8 @@ effect/rpc/Utils (barrel: effect/rpc)
 - `Socket.fromTransformStream` -> `Socket.fromTransformStream`: The constructor remains in effect/socket/Socket but drops closeCodeIsError; every close fails the reader's pull with a SocketError wrapping SocketCloseError.
 
 - `Socket.layerWebSocket` -> `Socket.layerWebSocket`: The constructor remains in effect/socket/Socket; its URL may now also be an Effect.
+
+- `Socket.makeWebSocket`: TODO: needs guidance
 
 - `Socket.toChannelMap` -> `none`: The v4 Socket read side is an Effect that never completes via Cause.Done; map frames by acquiring Socket.readerBytes or Socket.readerString, or Effect.map the reader from socket.reader, and use Socket.toChannel or Socket.toChannelString for duplex channels.
 
@@ -8084,9 +8088,9 @@ effect/rpc/Utils (barrel: effect/rpc)
 
 ### `@effect/sql/SqlEventLogServer`
 
-- `SqlEventLogServer.layerStorage` -> `effect/eventlog/SqlEventLogServerEncrypted#layerStorage`: Moved to the encrypted server module with the same options and EventLogEncryption requirement.
+- `SqlEventLogServer.layerStorage` -> `effect/eventlog/SqlEventLogServerEncrypted#layerStorage`: Moved to the encrypted server module with the same options. It requires the `Digest` service from `effect/crypto/Digest` instead of EventLogEncryption, which hashed the table names in v3.
 
-- `SqlEventLogServer.makeStorage` -> `effect/eventlog/SqlEventLogServerEncrypted#makeStorage`: Moved to the encrypted server module with the same SQL, encryption, and scope requirements.
+- `SqlEventLogServer.makeStorage` -> `effect/eventlog/SqlEventLogServerEncrypted#makeStorage`: Moved to the encrypted server module with the same SQL and scope requirements. The EventLogEncryption requirement is replaced by the `Digest` service from `effect/crypto/Digest`.
 
 ### `@effect/sql/SqlPersistedQueue`
 
@@ -8098,6 +8102,10 @@ effect/rpc/Utils (barrel: effect/rpc)
 
 - `SqlResolver.SqlResolver` -> `RequestResolver.RequestResolver<SqlResolver.SqlRequest<...>>`: The wrapper interface was removed; constructors return RequestResolvers. Execute them with effect/sql/SqlResolver#request.
 
+- `SqlResolver.findById`: TODO: needs guidance
+
+- `SqlResolver.ordered`: TODO: needs guidance
+
 - `SqlResolver.void` -> `effect/sql/SqlResolver#void`: Moved, but remove the leading tag and withContext arguments; it now returns a RequestResolver synchronously and runs through SqlResolver.request.
 
 ### `@effect/sql/SqlSchema`
@@ -8107,6 +8115,8 @@ effect/rpc/Utils (barrel: effect/rpc)
 - `SqlSchema.void` -> `effect/sql/SqlSchema#void`: Moved with the same encode, execute, and discard-result pattern; schema failures now use Schema.SchemaError.
 
 ### `@effect/sql/Statement`
+
+- `Statement.Fragment`: TODO: needs guidance
 
 - `Statement.FragmentId` -> `none`: The v4 fragment brand is private; use Fragment, fragment, and isFragment instead of direct type-id access.
 
